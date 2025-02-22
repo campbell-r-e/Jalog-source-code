@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <!--
     Modified by: Campbell Reed
-    Date: 2025-02-20
+    Date: 2025-02-22
     Changes:
-    - Ensured JAR is placed in 'jalog/release/' without creating extra directories.
-    - Added classpath to include external libraries during compilation.
-    - Removed unnecessary mkdir command for dist.dir.
+    - Added targets to clone and compile ADIF library from GitHub.
+    - Included ADIF JAR in the final executable JAR.
+    - Updated ADIF source location to be under the lib folder.
 -->
 
 <project name="jlog" default="CreateExecutableJarFileWithExternalLibrary">
@@ -14,6 +14,7 @@
     <property name="build.dir" value="build"/>
     <property name="dist.dir" value="jalog/release"/>
     <property name="lib.dir" value="lib"/>
+    <property name="adif.src.dir" value="${lib.dir}/adif"/>
 
     <!-- Clean build directory and JAR file -->
     <target name="clean">
@@ -21,8 +22,22 @@
         <delete file="${dist.dir}/jalog.jar"/>
     </target>
 
+    <!-- Clone ADIF library from GitHub -->
+    <target name="clone-adif">
+        <exec executable="git">
+            <arg line="clone https://github.com/la1k/adif.git ${adif.src.dir}"/>
+        </exec>
+    </target>
+
+    <!-- Compile ADIF library -->
+    <target name="compile-adif" depends="clone-adif">
+        <mkdir dir="${lib.dir}"/>
+        <javac srcdir="${adif.src.dir}/src/main/java" destdir="${build.dir}/adif" includeantruntime="false"/>
+        <jar destfile="${lib.dir}/adif.jar" basedir="${build.dir}/adif"/>
+    </target>
+
     <!-- Compile Java sources with classpath for external libraries -->
-    <target name="compile">
+    <target name="compile" depends="compile-adif">
         <mkdir dir="${build.dir}" />
         <javac srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false">
             <classpath>
@@ -33,7 +48,7 @@
         </javac>
     </target>
 
-    <!-- Create executable JAR in 'jalog/release/' without creating extra directories -->
+    <!-- Create executable JAR including ADIF library -->
     <target name="CreateExecutableJarFileWithExternalLibrary" depends="compile">
         <delete file="${dist.dir}/jalog.jar"/>
         <jar destfile="${dist.dir}/jalog.jar">
@@ -41,11 +56,11 @@
             <zipfileset src="${lib.dir}/ecs-1.4.2.jar" />
             <zipfileset src="${lib.dir}/skinlf.jar" />
             <zipfileset src="${lib.dir}/SizeOf.jar" />
+            <zipfileset src="${lib.dir}/adif.jar" />
             <manifest>
                 <attribute name="Main-Class" value="jalog.Genesis" />
             </manifest>
         </jar>
     </target>
-    
 
 </project>
